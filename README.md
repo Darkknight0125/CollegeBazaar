@@ -22,12 +22,12 @@ This is the backend for **CollegeBazaar**, a college e-commerce platform built w
 ```
 .
 ├── src
+|   ├── config
 │   ├── controllers
 │   ├── middlewares
 │   ├── models
 │   ├── routes
-│   ├── utils
-├── app.js
+|   ├── app.js
 ├── package.json
 ├── .env.example
 ├── README.md
