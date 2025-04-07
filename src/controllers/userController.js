@@ -1,5 +1,9 @@
 import db from "../config/db.config.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Signup function
 export const signupUser = async (req, res) => {
@@ -31,4 +35,44 @@ export const signupUser = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
+
 };
+
+// Login function
+export const loginUser = async (req, res) => {
+
+    try {
+
+      const { identifier, password } = req.body;
+  
+      const userQuery = await db.query(
+        "SELECT * FROM users WHERE roll_no = $1 OR email = $1 OR phone_no = $1",
+        [identifier]
+      );
+  
+      if (userQuery.rows.length === 0) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+  
+      const user = userQuery.rows[0];
+  
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid password" });
+      }
+  
+      const token = jwt.sign(
+        { roll_no: user.roll_no },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+  
+      res.status(200).json({ message: "Login successful", token });
+
+    } 
+    catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+
+  };
