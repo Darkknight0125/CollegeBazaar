@@ -4,6 +4,6 @@ CREATE TABLE users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(100) UNIQUE,
   phone_no VARCHAR(15) UNIQUE,
-  password VARCHAR(50) NOT NULL,
+  password TEXT NOT NULL,
   hostel VARCHAR(10) CHECK (hostel IN ('BH1', 'BH2', 'BH3', 'BH4', 'BH5', 'GH1', 'GH2', 'GH3'))
 );
