@@ -75,6 +75,62 @@ export const placeBid = async (req, res) => {
       console.error('Error placing bid:', err);
       res.status(500).json({ error: 'Failed to place bid' });
     }
+
+  };
+
+export const getAllBidsOnProduct = async (req, res) => {
+
+    const { product_id } = req.params;
+  
+    try {
+
+      const result = await db.query(
+        `SELECT b.*, u.name AS bidder_name, u.user_id, u.roll_no
+         FROM bids b
+         JOIN users u ON b.buyer_id = u.user_id
+         WHERE b.product_id = $1
+         ORDER BY b.amount DESC`,
+        [product_id]
+      );
+  
+      res.status(200).json({ bids: result.rows });
+  
+    } 
+    catch (err) {
+      console.error('Error fetching bids:', err);
+      res.status(500).json({ error: 'Failed to fetch bids' });
+    }
+
+};
+  
+export const getHighestBidOnProduct = async (req, res) => {
+
+    const { product_id } = req.params;
+  
+    try {
+
+      const result = await db.query(
+        `SELECT b.*, u.name AS bidder_name, u.user_id, u.roll_no
+         FROM bids b
+         JOIN users u ON b.buyer_id = u.user_id
+         WHERE b.product_id = $1
+         ORDER BY b.amount DESC
+         LIMIT 1`,
+        [product_id]
+      );
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'No bids on this product yet' });
+      }
+  
+      res.status(200).json({ highest_bid: result.rows[0] });
+  
+    } 
+    catch (err) {
+      console.error('Error fetching highest bid:', err);
+      res.status(500).json({ error: 'Failed to fetch highest bid' });
+    }
     
   };
+  
   
