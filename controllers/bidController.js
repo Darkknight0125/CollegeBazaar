@@ -130,7 +130,36 @@ export const getHighestBidOnProduct = async (req, res) => {
       console.error('Error fetching highest bid:', err);
       res.status(500).json({ error: 'Failed to fetch highest bid' });
     }
+
+};
+
+export const getMyBids = async (req, res) => {
+
+    const user_id = req.user.user_id;
+  
+    try {
+
+      const result = await db.query(
+        `SELECT b.*, 
+                p.name AS product_name, 
+                p.asking_price, 
+                p.deadline
+         FROM bids b
+         JOIN products p ON b.product_id = p.product_id
+         WHERE b.buyer_id = $1
+         ORDER BY b.created_at DESC`,
+        [user_id]
+      );
+  
+      res.status(200).json({ my_bids: result.rows });
+  
+    } 
+    catch (err) {
+      console.error('Error fetching user bids:', err);
+      res.status(500).json({ error: 'Failed to fetch your bids' });
+    }
     
-  };
+};
+  
   
   
