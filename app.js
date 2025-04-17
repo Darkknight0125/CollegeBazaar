@@ -4,6 +4,7 @@ import authRoutes from './routes/authRoutes.js';
 import sellerRoutes from './routes/sellerRoutes.js';
 import bidRoutes from './routes/bidRoutes.js';
 import queryRoutes from './routes/queryRoutes.js';
+import imageRoutes from './routes/imageRoutes.js';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/bid', bidRoutes);
 app.use('/api/query', queryRoutes);
+app.use('/api/images', imageRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
