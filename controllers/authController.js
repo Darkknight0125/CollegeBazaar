@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import db from '../config/db.js';
 import jwt from 'jsonwebtoken';
 import sendMail from '../config/mailer.js';
+import { otpEmail, signupSuccess, loginNotification } from '../utils/emailTemplates.js';
 
 export const requestOtp = async (req, res) => {
 
@@ -30,7 +31,7 @@ export const requestOtp = async (req, res) => {
       return res.status(429).json({ error: 'Too many OTP requests. Try later.' });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 1 * 70 * 1000);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     await db.query(
       `INSERT INTO signup_otps (email, otp, expires_at, created_at)
@@ -39,7 +40,8 @@ export const requestOtp = async (req, res) => {
       [email, otp, expiresAt]
     );
 
-    await sendMail(email, 'Your OTP for CollegeBazaar', `Your OTP is: ${otp}`);
+    const { subject, html } = otpEmail(otp);
+    await sendMail(email, subject, html);
 
     res.status(200).json({ message: 'OTP sent to email' });
 
@@ -93,6 +95,9 @@ export const verifyOtpAndSignup = async (req, res) => {
 
     await db.query(`DELETE FROM signup_otps WHERE email = $1`, [email]);
 
+    const {subject, html} = signupSuccess(name);
+    sendMail(email, subject, html);
+
     res.status(201).json({ message: 'User signed up successfully' });
 
   } 
@@ -128,6 +133,15 @@ export const login = async (req, res) => {
       user_id: user.user_id,
       username: user.name
     }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    const loginTime = new Date().toLocaleString('en-US', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+      hour12: true,
+    });
+    const ipAddress = req.ip || 'Unknown IP';
+    const {subject, html} = loginNotification(email, loginTime, ipAddress);
+    sendMail(email, subject, html);
 
     res.status(200).json({ token });
 

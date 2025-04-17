@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const sendMail = async (to, subject, text) => {
+const sendMail = async (to, subject, html, text = '') => {
 
   try {
 
@@ -19,12 +19,13 @@ const sendMail = async (to, subject, text) => {
       from: `"CollegeBazaar" <${process.env.EMAIL_USER}>`,
       to,
       subject,
+      html,
       text
     });
 
     console.log('Email sent:', info.messageId);
     return info;
-    
+
   } 
   catch (err) {
     console.error('Error sending email:', err);
