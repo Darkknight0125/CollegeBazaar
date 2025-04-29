@@ -2,20 +2,20 @@ import db from '../config/db.js';
 
 export const addProduct = async (req, res) => {
 
-    const { name, description, asking_price, deadline } = req.body;
+    const { name, description, asking_price, deadline, category } = req.body;
     const seller_id = req.user.user_id;
 
-    if (!name || !asking_price || !deadline) {
-        return res.status(400).json({ error: 'Name, asking_price, and deadline are required' });
+    if (!name || !asking_price || !deadline || !category) {
+        return res.status(400).json({ error: 'Name, asking_price, deadline and category are required' });
     }
 
     try {
 
         const result = await db.query(
-        `INSERT INTO products (name, description, asking_price, deadline, seller_id)
-        VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO products (name, description, asking_price, deadline, seller_id, category)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *`,
-        [name, description || '', asking_price, deadline, seller_id]
+        [name, description || '', asking_price, deadline, seller_id, category]
         );
 
         res.status(201).json({ message: 'Product added', product: result.rows[0] });
@@ -31,7 +31,7 @@ export const addProduct = async (req, res) => {
 export const editProduct = async (req, res) => {
 
     const { product_id } = req.params;
-    const { name, description, asking_price, deadline } = req.body;
+    const { name, description, asking_price, deadline, category} = req.body;
     const seller_id = req.user.user_id;
   
     try {
@@ -67,6 +67,11 @@ export const editProduct = async (req, res) => {
       if (deadline !== undefined) {
         fields.push(`deadline = $${index++}`);
         values.push(deadline);
+      }
+
+      if (category !== undefined) {
+        fields.push(`category = $${index++}`);
+        values.push(category);
       }
   
       if (fields.length === 0) {
@@ -120,5 +125,33 @@ export const deleteProduct = async (req, res) => {
         console.error('Error deleting product:', err);
         res.status(500).json({ error: 'Failed to delete product' });
     }
+
+};
+
+export const getProductsByCategory = async (req, res) => {
+
+  const category = req.params.category;
+
+  if (!category) {
+    return res.status(400).json({ error: 'Category is required' });
+  }
+
+  try {
+
+    const result = await db.query(
+      `SELECT * FROM products WHERE category = $1`,
+      [category]
+    );
+
+    res.status(200).json({
+      message: 'Products retrieved successfully',
+      products: result.rows,
+    });
+
+  } 
+  catch (err) {
+    console.error('Error fetching products by category:', err);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
 
 };
