@@ -155,3 +155,24 @@ export const getProductsByCategory = async (req, res) => {
   }
 
 };
+
+export const getActiveProducts = async (req, res) => {
+
+  try {
+
+    const result = await db.query(
+      `SELECT * FROM products WHERE deadline > NOW()`
+    );
+
+    res.status(200).json({
+      message: 'Active products retrieved successfully',
+      products: result.rows,
+    });
+
+  } 
+  catch (err) {
+    console.error('Error fetching active products:', err);
+    res.status(500).json({ error: 'Failed to fetch active products' });
+  }
+  
+};
