@@ -153,3 +153,71 @@ export const login = async (req, res) => {
   
 };
 
+export const editProfile = async (req, res) => {
+ 
+  const { name, phone_no, hostel } = req.body;
+  const userId = req.user.user_id; 
+
+  if (!name && !phone_no && !hostel) {
+    return res.status(400).json({ error: 'At least one field is required to update' });
+  }
+
+  try {
+
+    const fields = [];
+    const values = [];
+
+    if (name) {
+      fields.push('name');
+      values.push(name);
+    }
+    if (phone_no) {
+      fields.push('phone_no');
+      values.push(phone_no);
+    }
+    if (hostel) {
+      fields.push('hostel');
+      values.push(hostel);
+    }
+
+    const setClause = fields.map((field, index) => `${field} = $${index + 1}`).join(', ');
+    const query = `
+      UPDATE users
+      SET ${setClause}
+      WHERE user_id = $${fields.length + 1}
+      RETURNING user_id, roll_no, name, email, phone_no, hostel
+    `;
+
+    values.push(userId);
+
+    const result = await db.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const updatedUser = result.rows[0];
+    res.status(200).json({
+      message: 'Profile updated successfully',
+      user: updatedUser,
+    });
+
+  } 
+  catch (err) {
+
+    console.error('Error updating profile:', err);
+
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'Phone number already exists' });
+    }
+
+    if (err.code === '23514') {
+      return res.status(400).json({ error: 'Invalid hostel value' });
+    }
+
+    res.status(500).json({ error: 'Server error during profile update' });
+
+  }
+  
+};
+
