@@ -139,7 +139,7 @@ export const getProductsByCategory = async (req, res) => {
   try {
 
     const result = await db.query(
-      `SELECT * FROM products WHERE category = $1 AND status = "active"`,
+      `SELECT * FROM products WHERE category = $1 AND status = 'active'`,
       [category]
     );
 
@@ -161,7 +161,7 @@ export const getActiveProducts = async (req, res) => {
   try {
 
     const result = await db.query(
-      `SELECT * FROM products WHERE deadline > NOW() AND status = "active"`
+      `SELECT * FROM products WHERE deadline > NOW() AND status = 'active'`
     );
 
     res.status(200).json({
