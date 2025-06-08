@@ -221,3 +221,37 @@ export const editProfile = async (req, res) => {
   
 };
 
+export const getProfile = async (req, res) => {
+
+  const userId = req.user.user_id;
+
+  try {
+
+    const query = `
+      SELECT user_id, roll_no, name, email, phone_no, hostel
+      FROM users
+      WHERE user_id = $1
+    `;
+
+    const result = await db.query(query, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    res.status(200).json({
+      message: 'Profile fetched successfully',
+      user: user,
+    });
+
+  } 
+  catch (err) {
+    console.error('Error fetching profile:', err);
+    res.status(500).json({ error: 'Server error during profile fetch' });
+  }
+  
+};
+
+
