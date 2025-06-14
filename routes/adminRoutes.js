@@ -6,7 +6,7 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.post('/login', adminLogin);
-router.patch('/products/approve', authMiddleware, approveProduct);
-router.get('/products/approval-pending', authMiddleware, getApprovalPendingProducts);
+router.post('/approve-product', authMiddleware, approveProduct);
+router.get('/approval-pending-products', authMiddleware, getApprovalPendingProducts);
 
 export default router;
