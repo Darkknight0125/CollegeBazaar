@@ -130,6 +130,7 @@ export const deleteProduct = async (req, res) => {
 
 export const getProductsByCategory = async (req, res) => {
 
+  const seller_id = req.user.user_id;
   const category = req.params.category;
 
   if (!category) {
@@ -139,8 +140,8 @@ export const getProductsByCategory = async (req, res) => {
   try {
 
     const result = await db.query(
-      `SELECT * FROM products WHERE category = $1 AND status = 'active'`,
-      [category]
+      `SELECT * FROM products WHERE category = $1 AND status = 'active' AND seller_id != $2`, 
+      [category, seller_id]
     );
 
     res.status(200).json({
@@ -158,10 +159,12 @@ export const getProductsByCategory = async (req, res) => {
 
 export const getActiveProducts = async (req, res) => {
 
+  const seller_id = req.user.user_id;
+
   try {
 
     const productsResult = await db.query(
-      `SELECT * FROM products WHERE deadline > NOW() AND status = 'active'`
+      `SELECT * FROM products WHERE deadline > NOW() AND status = 'active' AND seller_id != $1`, [seller_id]
     );
 
     const products = productsResult.rows;

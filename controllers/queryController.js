@@ -27,11 +27,21 @@ export const postQuery = async (req, res) => {
         return res.status(400).json({ error: 'You cannot post a query on your own product' });
         }
 
+        const insertResult = await db.query(
+          `INSERT INTO queries (product_id, customer_id, query, created_at)
+           VALUES ($1, $2, $3, NOW())
+           RETURNING query_id, product_id, customer_id, query, created_at`,
+          [product_id, customer_id, query.trim()]
+        );
+    
+        const insertedQuery = insertResult.rows[0];
+    
         const queryResult = await db.query(
-            `INSERT INTO queries (product_id, customer_id, query, created_at)
-            VALUES ($1, $2, $3, NOW())
-            RETURNING *`,
-            [product_id, customer_id, query]
+          `SELECT q.*, u.name AS customer_name
+           FROM queries q
+           JOIN users u ON q.customer_id = u.user_id
+           WHERE q.query_id = $1`,
+          [insertedQuery.query_id]
         );
 
         res.status(201).json({ message: 'Query posted', query: queryResult.rows[0] });
@@ -57,7 +67,7 @@ export const editQuery = async (req, res) => {
   try {
 
     const existing = await db.query(
-      `SELECT customer_id FROM queries WHERE query_id = $1`,
+      `SELECT customer_id, reply FROM queries WHERE query_id = $1`,
       [query_id]
     );
 
@@ -65,16 +75,28 @@ export const editQuery = async (req, res) => {
       return res.status(404).json({ error: 'Query not found' });
     }
 
+    if (existing.rows[0].reply) {
+      return res.status(403).json({ error: 'Cannot edit query after seller reply' });
+    }
+
     if (existing.rows[0].customer_id !== customer_id) {
       return res.status(403).json({ error: 'You are not authorized to edit this query' });
     }
 
-    const result = await db.query(
+    const updateResult = await db.query(
       `UPDATE queries
        SET query = $1
        WHERE query_id = $2
-       RETURNING *`,
+       RETURNING query_id, product_id, customer_id, query, created_at`,
       [updatedText.trim(), query_id]
+    );
+
+    const result = await db.query(
+      `SELECT q.*, u.name AS customer_name
+       FROM queries q
+       JOIN users u ON q.customer_id = u.user_id
+       WHERE q.query_id = $1`,
+      [query_id]
     );
 
     res.status(200).json({ message: 'Query updated', query: result.rows[0] });
@@ -122,27 +144,46 @@ export const deleteQuery = async (req, res) => {
 
 export const getQueriesOnProduct = async (req, res) => {
 
-    const { product_id } = req.params;
-  
-    try {
+  const { product_id } = req.params;
+  const user_id = req.user ? req.user.user_id : null;
 
-      const result = await db.query(
-        `SELECT q.*
+  try {
+
+    let userQueries = [];
+    if (user_id) {
+      const userQueriesResult = await db.query(
+        `SELECT q.*, u.name AS customer_name
          FROM queries q
-         WHERE q.product_id = $1
+         JOIN users u ON q.customer_id = u.user_id
+         WHERE q.product_id = $1 AND q.customer_id = $2
          ORDER BY q.created_at ASC`,
-        [product_id]
+        [product_id, user_id]
       );
-  
-      res.status(200).json({ queries: result.rows });
-  
-    } 
-    catch (err) {
-      console.error('Error fetching queries:', err);
-      res.status(500).json({ error: 'Failed to fetch queries' });
+      userQueries = userQueriesResult.rows;
     }
 
-  };
+    const otherQueriesResult = await db.query(
+      `SELECT q.*, u.name AS customer_name
+       FROM queries q
+       JOIN users u ON q.customer_id = u.user_id
+       WHERE q.product_id = $1 ${user_id ? 'AND q.customer_id != $2' : ''}
+       ORDER BY q.created_at ASC`,
+      user_id ? [product_id, user_id] : [product_id]
+    );
+    const otherQueries = otherQueriesResult.rows;
+
+    res.status(200).json({
+      userQueries,
+      otherQueries,
+    });
+
+  } 
+  catch (err) {
+    console.error('Error fetching queries:', err);
+    res.status(500).json({ error: 'Failed to fetch queries' });
+  }
+  
+};
 
   export const respondToQuery = async (req, res) => {
 
