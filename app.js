@@ -6,7 +6,8 @@ import sellerRoutes from './routes/sellerRoutes.js';
 import bidRoutes from './routes/bidRoutes.js';
 import queryRoutes from './routes/queryRoutes.js';
 import imageRoutes from './routes/imageRoutes.js';
-import adminRoutes from './routes/adminRoutes.js'
+import adminRoutes from './routes/adminRoutes.js';
+import './cronjob/scheduler.js';
 
 dotenv.config();
 

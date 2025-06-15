@@ -9,6 +9,10 @@ export const addProduct = async (req, res) => {
         return res.status(400).json({ error: 'Name, asking_price, deadline and category are required' });
     }
 
+    if (isNaN(Date.parse(deadline)) || new Date(deadline) <= new Date()) {
+      return res.status(400).json({ error: 'Deadline must be a valid future date' });
+    }
+
     try {
 
         const result = await db.query(
@@ -44,6 +48,11 @@ export const editProduct = async (req, res) => {
       if (existing.rows.length === 0) {
         return res.status(403).json({ error: 'Unauthorized or product not found' });
       }
+
+      const product = existing.rows[0];
+      if (product.status === 'sold' || product.status === 'expired') {
+        return res.status(400).json({ error: 'Cannot edit a product that is sold or expired' });
+      }
   
       const fields = [];
       const values = [];
@@ -65,6 +74,9 @@ export const editProduct = async (req, res) => {
       }
   
       if (deadline !== undefined) {
+        if (isNaN(Date.parse(deadline)) || new Date(deadline) <= new Date()) {
+          return res.status(400).json({ error: 'Deadline must be a valid future date' });
+        } 
         fields.push(`deadline = $${index++}`);
         values.push(deadline);
       }
@@ -114,6 +126,11 @@ export const deleteProduct = async (req, res) => {
 
         if (existing.rows.length === 0) {
         return res.status(403).json({ error: 'Unauthorized or product not found' });
+        }
+
+        const product = existing.rows[0];
+        if (product.status === 'sold' || product.status === 'expired') {
+          return res.status(400).json({ error: 'Cannot edit a product that is sold or expired' });
         }
 
         await db.query(`DELETE FROM products WHERE product_id = $1`, [product_id]);

@@ -163,7 +163,7 @@ export const getMyBids = async (req, res) => {
          FROM bids b
          JOIN products p ON b.product_id = p.product_id
          WHERE b.buyer_id = $1
-           AND b.status IN ('highest', 'outbid')
+           AND b.status IN ('highest', 'outbid', 'purchased')
          ORDER BY b.created_at DESC`,
         [user_id]
       );
@@ -176,6 +176,38 @@ export const getMyBids = async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch your bids' });
     }
     
+};
+
+export const getBuyer = async (req, res) => {
+
+  const { product_id } = req.query;
+
+  if (!product_id) {
+    res.status(400).json({ error: 'Missing required parameter: product_id' });
+  }
+
+  try {
+
+    const result = await db.query(`
+      SELECT u.name AS buyer_name, u.roll_no, u.email, b.amount, b.created_at
+      FROM bids b
+      JOIN users u ON b.buyer_id = u.user_id
+      WHERE b.product_id = $1 AND b.status = 'purchased'
+      LIMIT 1;
+    `, [product_id]);
+
+    if (result.rows.length === 0) {
+      res.status(400).json({ error: 'No purchased bid found for this product.' });
+    }
+
+    res.status(200).json({ buyer: result.rows[0] });
+
+  } 
+  catch (error) {
+    console.error('Error in getHighestBidder:', error);
+    res.status(500).json({ error: 'Failed to fetch buyer' });
+  }
+
 };
   
   
